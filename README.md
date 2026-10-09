@@ -89,7 +89,7 @@ src/oulad_analytics/
     viz.py         figures
     synthetic.py   fake data in OULAD format (for tests and CI)
     cli.py         command-line interface
-tests/             pytest suite (31 tests, 100 % line coverage)
+tests/             pytest suite (32 tests, 100 % line coverage)
 .github/workflows/ ci.yml (lint, test, demo, build) and release.yml (CD)
 ```
 
