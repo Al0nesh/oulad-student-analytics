@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "oulad-student-analytics: early prediction of at-risk students from OULAD"
+version: 0.1.0
+date-released: 2026-10-10
+license: MIT
+repository-code: "https://github.com/Al0nesh/oulad-student-analytics"
+authors:
+  - family-names: Ulkhanov
+    given-names: Alisher
+    affiliation: Astana IT University
+keywords:
+  - learning analytics
+  - educational data mining
+  - student performance prediction
