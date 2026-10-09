@@ -66,3 +66,10 @@ def test_synthetic_table_has_no_missing_except_imd(synthetic_dir):
     na = t[feature_columns(t)].isna().sum()
     assert set(na[na > 0].index) <= {"imd_band"}
     assert t["at_risk"].isin([0, 1]).all()
+
+
+def test_partial_last_week_has_no_column(tiny_data):
+    # cut-off day 9: week 0 (days 0-6) is complete, week 1 (days 7-13) is not
+    t = build_feature_table(tiny_data, cutoff_day=9).set_index("id_student")
+    assert "clicks_w0" in t.columns and "clicks_w1" not in t.columns
+    assert t.loc[1, "total_clicks"] == 25  # day-8 clicks still counted in the total

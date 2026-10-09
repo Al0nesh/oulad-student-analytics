@@ -23,7 +23,7 @@ OULAD CSV files ──► load & validate ──► clean ──► features up 
 1. **Loads and validates** the five OULAD tables it needs and stops with a clear message if a file or column is missing.
 2. **Cleans** demographics (fixes the known `"10-20"` typo in `imd_band`, keeps a flag for missing values, encodes ordinal categories).
 3. **Builds features using only data up to a cut-off day** (default: day 70, about week 10), so the prediction is made *during* the course without looking into the future:
-   - VLE activity: total clicks, active days, clicks per active day, clicks before the start, clicks for every week;
+   - VLE activity: total clicks, active days, clicks per active day, clicks before the start, clicks for every complete week;
    - assessments: submission rate, mean and weighted score, late submissions, days submitted before the deadline;
    - demographics: education, age band, deprivation index, previous attempts, credits, gender, disability.
 4. **Target:** `at_risk = 1` for *Fail* or *Withdrawn*, `0` for *Pass* or *Distinction*. Students who already withdrew before the cut-off are excluded.

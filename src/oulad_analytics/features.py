@@ -31,11 +31,13 @@ def vle_features(student_vle: pd.DataFrame, cutoff_day: int) -> pd.DataFrame:
     """Aggregate VLE click-stream data per enrolment up to ``cutoff_day``.
 
     Returns total clicks, number of active days, clicks per active day,
-    clicks before the course start and clicks for every week
+    clicks before the course start and clicks for every complete week
     (``clicks_w0`` ... ``clicks_wN``).
     """
     vle = student_vle[student_vle["date"] <= cutoff_day]
-    n_weeks = cutoff_day // 7 + 1
+    # Only complete weeks get their own column; a partial last week would look like a
+    # sudden drop in activity. Its clicks are still counted in total_clicks.
+    n_weeks = (cutoff_day + 1) // 7
     week_cols = [f"clicks_w{w}" for w in range(n_weeks)]
 
     if vle.empty:

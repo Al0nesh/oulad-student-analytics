@@ -19,7 +19,8 @@ def test_features_command(synthetic_dir, tmp_path):
         == 0
     )
     df = pd.read_csv(out)
-    assert "clicks_w5" in df.columns and "clicks_w6" not in df.columns
+    # days 0-35 contain 5 complete weeks: w0 ... w4
+    assert "clicks_w4" in df.columns and "clicks_w5" not in df.columns
 
 
 def test_train_command_writes_outputs(synthetic_dir, tmp_path):
