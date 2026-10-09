@@ -1,0 +1,32 @@
+# Data — never commit OULAD or any student data
+data/
+*.csv
+!tests/**/*.csv
+anonymisedData.zip
+
+# Results
+results/
+results-*/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Tools
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.ipynb_checkpoints/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
