@@ -10,8 +10,8 @@ A small, tested Python tool for **early prediction of at-risk students** from th
 It is the data-processing module of the master's thesis *"Application of Artificial
 Intelligence Methods for Analyzing and Predicting Students' Academic Performance and
 Designing Their Educational Trajectories"* (Astana IT University, 2025–2027). It builds
-the **classical machine-learning baselines** that the thesis's deep temporal model
-will be compared against.
+the **classical machine-learning baselines** and the thesis's **deep temporal model**
+(an LSTM over weekly activity), and tests whether the LSTM is significantly better.
 
 ## What it does
 
@@ -28,7 +28,33 @@ OULAD CSV files ──► load & validate ──► clean ──► features up 
    - demographics: education, age band, deprivation index, previous attempts, credits, gender, disability.
 4. **Target:** `at_risk = 1` for *Fail* or *Withdrawn*, `0` for *Pass* or *Distinction*. Students who already withdrew before the cut-off are excluded.
 5. **Trains four baselines** — majority class, logistic regression, random forest, gradient boosting — on a **70 / 15 / 15** split **grouped by student** (the same student is never in two parts).
-6. **Reports** accuracy, precision, recall, F1 and ROC-AUC, feature importance and three figures.
+6. **Optionally trains the LSTM** (`--deep`) on the same split — see [the deep model](#the-deep-temporal-model-lstm).
+7. **Reports** accuracy, precision, recall, F1 and ROC-AUC, feature importance and three figures.
+
+## The deep temporal model (LSTM)
+
+The baselines see one row of totals per student. The thesis hypothesis is that keeping
+the **order of the weeks** and combining **several data sources** predicts better.
+
+```
+weekly sequence (weeks x 6) ──► LSTM (32) ──┐
+                                             ├─► dense ──► P(at risk)
+demographics + pre-course clicks ──► dense ──┘
+```
+
+Each complete week before the cut-off is described by six numbers from two sources:
+
+| Source | Channel |
+|---|---|
+| VLE | `log_clicks` — log(1 + clicks), `active_days` — days with any click |
+| Assessments | `n_due` — deadlines this week, `n_submitted`, `mean_score` (/100), `n_late` |
+
+Training: Adam, class-weighted loss, early stopping on validation ROC-AUC, fixed seed.
+
+**Is it significantly better?** `significance.csv` compares the LSTM with every baseline
+on the test set using a **paired bootstrap that resamples students** (2000 rounds):
+the difference in ROC-AUC and F1, its 95 % confidence interval and a p-value. The
+difference is significant at the 5 % level when the interval does not contain 0.
 
 ## Installation
 
@@ -40,6 +66,9 @@ cd oulad-student-analytics
 python -m venv .venv
 # Windows:  .venv\Scripts\activate      Linux/macOS:  source .venv/bin/activate
 pip install -e ".[dev]"
+# for the LSTM (CPU version of PyTorch is enough):
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[deep]"
 ```
 
 ## Quick start (no download needed)
@@ -58,6 +87,8 @@ The synthetic numbers only show that the pipeline works — they are **not** res
 
 ```bash
 oulad-analytics train --data-dir "C:\path\to\OULAD_dataset" --cutoff 70 --out-dir results
+# baselines + LSTM + significance test:
+oulad-analytics train --data-dir "C:\path\to\OULAD_dataset" --cutoff 70 --out-dir results --deep
 ```
 
 Other commands:
@@ -77,6 +108,8 @@ oulad-analytics --help
 | `feature_importance.csv` / `.png` | which features the random forest relies on |
 | `weekly_clicks.png` | median weekly activity of at-risk vs. successful students |
 | `model_comparison.png` | F1, recall and ROC-AUC per model |
+| `significance.csv` | with `--deep`: LSTM minus each baseline, 95 % CI, p-value |
+| `lstm_history.csv` | with `--deep`: training loss and validation ROC-AUC per epoch |
 
 ## Project structure
 
@@ -86,10 +119,11 @@ src/oulad_analytics/
     preprocess.py  cleaning and target variable
     features.py    feature engineering with a cut-off day
     model.py       grouped split, baseline models, metrics
+    deep.py        weekly sequences, LSTM, bootstrap significance test
     viz.py         figures
     synthetic.py   fake data in OULAD format (for tests and CI)
     cli.py         command-line interface
-tests/             pytest suite (32 tests, 100 % line coverage)
+tests/             pytest suite (39 tests, 100 % line coverage)
 .github/workflows/ ci.yml (lint, test, demo, build) and release.yml (CD)
 ```
 
@@ -100,6 +134,7 @@ tests/             pytest suite (32 tests, 100 % line coverage)
 | Language | Python 3.10+ | standard in data science; all ML libraries available |
 | Tables | pandas | OULAD is a set of relational CSV tables; joins and group-bys are one line |
 | Models and metrics | scikit-learn | well-tested baselines, pipelines, grouped splits, reproducible with a seed |
+| Deep model | PyTorch (optional) | LSTM layer, CPU is enough for OULAD's size |
 | Figures | matplotlib | publication-quality static figures, works on servers without a screen |
 | Tests | pytest + pytest-cov | simple test functions, fixtures, coverage gate (80 %) |
 | Style | ruff | linter and formatter in one fast tool |
@@ -142,6 +177,6 @@ The code is released under the [MIT License](LICENSE). To cite this software, se
 
 - [ ] Run on the full OULAD and record the baseline results
 - [ ] Compare several cut-off days (week 4, 8, 12, 16)
-- [ ] Add an LSTM model on the weekly click sequence (thesis hypothesis)
+- [x] Add an LSTM model on the weekly sequence + significance test (thesis hypothesis)
 - [ ] Add SHAP explanations for individual students
 - [ ] Recommend next modules (educational trajectory) from the predictions
