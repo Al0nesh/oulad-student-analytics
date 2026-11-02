@@ -3,6 +3,7 @@
 Examples::
 
     oulad-analytics train --data-dir path/to/OULAD --cutoff 70 --out-dir results
+    oulad-analytics train --data-dir path/to/OULAD --deep   # + LSTM and significance test
     oulad-analytics features --data-dir path/to/OULAD --out features.csv
     oulad-analytics demo --out-dir results-demo     # synthetic data, no download
 """
@@ -13,6 +14,8 @@ import argparse
 import sys
 import tempfile
 from pathlib import Path
+
+import pandas as pd
 
 from . import __version__
 from .features import build_feature_table
@@ -30,8 +33,37 @@ def _markdown_table(df) -> str:
     return "\n".join([header, rule, *rows])
 
 
+class DeepUnavailableError(RuntimeError):
+    """Raised when ``--deep`` is used but PyTorch is not installed."""
+
+
+def _run_deep(data, table, split, result, cutoff: int, seed: int, out_dir: Path):
+    """Train the LSTM, compare it with the baselines and save its outputs."""
+    try:
+        from .deep import compare_to_baselines, train_lstm
+    except ImportError as err:  # pragma: no cover - depends on the environment
+        raise DeepUnavailableError('the LSTM needs PyTorch: pip install -e ".[deep]"') from err
+
+    deep = train_lstm(data, table, split, cutoff_day=cutoff, seed=seed)
+    cols = result.features
+    baselines = {
+        name: (model.predict(split.test[cols]), model.predict_proba(split.test[cols])[:, 1])
+        for name, model in result.models.items()
+        if name != "majority_class"
+    }
+    significance = compare_to_baselines(split.test, deep, baselines, seed=seed)
+    significance.round(4).to_csv(out_dir / "significance.csv", index=False)
+    pd.DataFrame(deep.model.history).round(4).to_csv(out_dir / "lstm_history.csv", index=False)
+    return deep, significance
+
+
 def _run_training(
-    data_dir: Path, cutoff: int, out_dir: Path, seed: int, label: str | None = None
+    data_dir: Path,
+    cutoff: int,
+    out_dir: Path,
+    seed: int,
+    label: str | None = None,
+    deep: bool = False,
 ) -> Path:
     data = load_oulad(data_dir)
     table = build_feature_table(data, cutoff_day=cutoff)
@@ -39,16 +71,22 @@ def _run_training(
     importance = feature_importance(result)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    result.metrics.round(4).to_csv(out_dir / "metrics.csv", index=False)
+    metrics = result.metrics
+    significance = None
+    if deep:
+        deep_result, significance = _run_deep(data, table, split, result, cutoff, seed, out_dir)
+        metrics = pd.concat([metrics, deep_result.metrics], ignore_index=True)
+
+    metrics.round(4).to_csv(out_dir / "metrics.csv", index=False)
     importance.round(4).to_csv(out_dir / "feature_importance.csv", header=["importance"])
     plot_weekly_clicks(table, out_dir / "weekly_clicks.png")
     plot_feature_importance(importance, out_dir / "feature_importance.png")
-    plot_metrics(result.metrics, out_dir / "model_comparison.png")
+    plot_metrics(metrics, out_dir / "model_comparison.png")
 
-    test = result.metrics[result.metrics["split"] == "test"].drop(columns="split")
+    test = metrics[metrics["split"] == "test"].drop(columns="split")
     sizes = split.sizes()
     summary = [
-        "# Baseline results",
+        "# Results" if deep else "# Baseline results",
         "",
         f"- data: {label or f'`{data_dir}`'}",
         f"- cut-off day: {cutoff}",
@@ -62,6 +100,16 @@ def _run_training(
         _markdown_table(test.round(3)),
         "",
     ]
+    if significance is not None:
+        sig = significance[["baseline", "metric", "diff", "ci_low", "ci_high", "p_value"]]
+        summary += [
+            "## LSTM vs. baselines (paired bootstrap over students, test set)",
+            "",
+            "`diff` = LSTM minus baseline; significant at 5 % when the 95 % CI excludes 0.",
+            "",
+            _markdown_table(sig.round(3)),
+            "",
+        ]
     (out_dir / "summary.md").write_text("\n".join(summary), encoding="utf-8")
     print("\n".join(summary))
     return out_dir
@@ -84,6 +132,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_train.add_argument("--cutoff", type=int, default=70)
     p_train.add_argument("--out-dir", type=Path, default=Path("results"))
     p_train.add_argument("--seed", type=int, default=42)
+    p_train.add_argument(
+        "--deep", action="store_true", help="also train the LSTM and test it against the baselines"
+    )
 
     p_syn = sub.add_parser("synthetic", help="write a synthetic OULAD-format dataset")
     p_syn.add_argument("--out", type=Path, required=True)
@@ -94,6 +145,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_demo.add_argument("--out-dir", type=Path, default=Path("results-demo"))
     p_demo.add_argument("--n-students", type=int, default=600)
     p_demo.add_argument("--seed", type=int, default=42)
+    p_demo.add_argument("--deep", action="store_true", help="also train the LSTM")
     return parser
 
 
@@ -106,15 +158,22 @@ def main(argv: list[str] | None = None) -> int:
             table.to_csv(args.out, index=False)
             print(f"Saved {len(table)} rows x {table.shape[1]} columns to {args.out}")
         elif args.command == "train":
-            _run_training(args.data_dir, args.cutoff, args.out_dir, args.seed)
+            _run_training(args.data_dir, args.cutoff, args.out_dir, args.seed, deep=args.deep)
         elif args.command == "synthetic":
             write_synthetic(args.out, args.n_students, args.seed)
             print(f"Synthetic OULAD-format data written to {args.out}")
         elif args.command == "demo":
             with tempfile.TemporaryDirectory() as tmp:
                 write_synthetic(tmp, args.n_students, seed=0)
-                _run_training(Path(tmp), 70, args.out_dir, args.seed, label="synthetic demo data")
-    except SchemaError as err:
+                _run_training(
+                    Path(tmp),
+                    70,
+                    args.out_dir,
+                    args.seed,
+                    label="synthetic demo data",
+                    deep=args.deep,
+                )
+    except (SchemaError, DeepUnavailableError) as err:
         print(f"error: {err}", file=sys.stderr)
         return 2
     return 0
