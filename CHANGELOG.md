@@ -4,6 +4,16 @@ All notable changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `experiments/`: 53 enriched features (material types, inactivity gaps, per-assessment
+  scores, activity relative to classmates, course context), six neural encoders, Optuna
+  tuning of LightGBM, XGBoost and the networks, a weighted ensemble and the final
+  four-split evaluation with paired bootstrap tests.
+- `notebooks/`: `OULAD_LSTM_model.ipynb` (stage 1) and `OULAD_best_model.ipynb` (best model).
+- Optional dependency group `experiments`.
+
 ## [0.2.0] - 2026-11-02
 
 ### Added

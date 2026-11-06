@@ -120,6 +120,8 @@ src/oulad_analytics/
     features.py    feature engineering with a cut-off day
     model.py       grouped split, baseline models, metrics
     deep.py        weekly sequences, LSTM, bootstrap significance test
+experiments/       stage-2 accuracy study: enriched features, Optuna, BiLSTM, ensemble
+notebooks/         step-by-step notebooks: first LSTM and the best model
     viz.py         figures
     synthetic.py   fake data in OULAD format (for tests and CI)
     cli.py         command-line interface
@@ -176,7 +178,8 @@ The code is released under the [MIT License](LICENSE). To cite this software, se
 ## Roadmap
 
 - [ ] Run on the full OULAD and record the baseline results
-- [ ] Compare several cut-off days (week 4, 8, 12, 16)
+- [x] Compare several cut-off days (weeks 5, 10, 15, 20)
+- [x] Enriched features, tuned LightGBM / XGBoost / BiLSTM and a weighted ensemble (see `experiments/`)
 - [x] Add an LSTM model on the weekly sequence + significance test (thesis hypothesis)
 - [ ] Add SHAP explanations for individual students
 - [ ] Recommend next modules (educational trajectory) from the predictions
