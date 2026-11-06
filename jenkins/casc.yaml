@@ -1,0 +1,37 @@
+# Jenkins Configuration as Code: the server is configured from this file at start-up,
+# so the whole CI server is reproducible from Git (no clicking through the setup wizard).
+jenkins:
+  systemMessage: "CI/CD for oulad-student-analytics - Assignment 5: DevOps and CI/CD"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+# The pipeline job itself: it reads the Jenkinsfile from the main branch on GitHub.
+jobs:
+  - script: |
+      pipelineJob('oulad-analytics') {
+        description('CI/CD pipeline for https://github.com/Al0nesh/oulad-student-analytics')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('https://github.com/Al0nesh/oulad-student-analytics.git') }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

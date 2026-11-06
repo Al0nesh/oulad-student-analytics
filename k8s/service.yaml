@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: oulad-analytics
+  namespace: oulad
+  labels:
+    app.kubernetes.io/name: oulad-analytics
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: oulad-analytics
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      nodePort: 30080

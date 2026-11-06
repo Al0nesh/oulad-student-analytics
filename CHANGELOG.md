@@ -7,6 +7,16 @@ All notable changes are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Multi-stage `Dockerfile` (pinned deps → test image with CPU PyTorch → wheel → non-root
+  runtime image) and `.dockerignore`; pinned versions in `requirements/`.
+- `docker/entrypoint.py`: `serve` mode runs the demo and serves the results page with a
+  `/healthz` endpoint.
+- `Jenkinsfile`: lint, unit tests, image build, smoke test, optional Docker Hub push, test
+  server deployment and optional Minikube deployment; triggered by SCM polling.
+- `jenkins/`: Jenkins LTS image with Docker CLI and kubectl, plugins list, Configuration as
+  Code and Docker Compose file.
+- `k8s/`: namespace, deployment (2 replicas, probes, rolling update) and NodePort service.
+- `docs/jenkins-setup.md`: step-by-step local setup guide.
 - `experiments/`: 53 enriched features (material types, inactivity gaps, per-assessment
   scores, activity relative to classmates, course context), six neural encoders, Optuna
   tuning of LightGBM, XGBoost and the networks, a weighted ensemble and the final

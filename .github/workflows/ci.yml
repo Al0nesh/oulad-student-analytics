@@ -3,6 +3,7 @@
 #   test  -> unit + integration tests on several Python versions and OSes
 #   demo  -> runs the whole pipeline on synthetic data and publishes the results
 #   build -> builds the installable package (wheel + sdist)
+#   docker -> builds the Docker image and runs a smoke test in it
 name: CI
 
 on:
@@ -98,3 +99,16 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  docker:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build runtime image
+        run: docker build --build-arg VERSION=gh-${{ github.run_number }} --build-arg VCS_REF=${GITHUB_SHA::7} -t oulad-analytics:ci .
+      - name: Smoke test the image
+        run: |
+          docker run --rm oulad-analytics:ci --version
+          docker run --rm oulad-analytics:ci demo --out-dir /results
+          docker image ls oulad-analytics

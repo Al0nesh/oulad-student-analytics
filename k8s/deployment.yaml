@@ -1,0 +1,67 @@
+# Runs the image in "serve" mode: every pod computes the demo results on start-up and
+# serves them on port 8000. Jenkins replaces __IMAGE__ with the image of the current build,
+# so each successful build triggers a rolling update with zero downtime.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oulad-analytics
+  namespace: oulad
+  labels:
+    app.kubernetes.io/name: oulad-analytics
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oulad-analytics
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oulad-analytics
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: web
+          image: __IMAGE__
+          imagePullPolicy: IfNotPresent
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: RESULTS_DIR
+              value: /results
+          volumeMounts:
+            - name: results
+              mountPath: /results
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: results
+          emptyDir: {}

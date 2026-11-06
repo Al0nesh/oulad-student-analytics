@@ -7,6 +7,9 @@ anonymisedData.zip
 # Results
 results/
 results-*/
+reports/
+demo-results/
+.kubeconfig
 
 # Python
 __pycache__/
