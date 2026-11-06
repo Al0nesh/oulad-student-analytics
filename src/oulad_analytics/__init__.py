@@ -6,10 +6,11 @@ The package is organised as a small, testable pipeline:
     preprocess -> clean demographic data and build the target variable
     features   -> aggregate assessments and VLE clicks up to a cut-off day
     model      -> train and evaluate baseline classifiers
+    deep       -> LSTM on weekly sequences + significance test (needs PyTorch)
     viz        -> produce figures for reports
     synthetic  -> generate a small fake dataset in OULAD format (for tests/demo)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = ["__version__"]

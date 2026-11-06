@@ -4,6 +4,28 @@ All notable changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `experiments/`: 53 enriched features (material types, inactivity gaps, per-assessment
+  scores, activity relative to classmates, course context), six neural encoders, Optuna
+  tuning of LightGBM, XGBoost and the networks, a weighted ensemble and the final
+  four-split evaluation with paired bootstrap tests.
+- `notebooks/`: `OULAD_LSTM_model.ipynb` (stage 1) and `OULAD_best_model.ipynb` (best model).
+- Optional dependency group `experiments`.
+
+## [0.2.0] - 2026-11-02
+
+### Added
+- `deep` module: weekly multi-source sequences (VLE activity + assessment timeline) built
+  only from complete weeks before the cut-off day.
+- Hybrid LSTM model (`TemporalRiskNet`): LSTM over the weekly sequence + dense layer over
+  demographics; class-weighted loss, early stopping on validation ROC-AUC, fixed seed.
+- Paired bootstrap test that resamples students and reports the LSTM-minus-baseline
+  difference in ROC-AUC and F1 with a 95 % confidence interval and p-value.
+- `--deep` flag for `train` and `demo`; new outputs `significance.csv` and `lstm_history.csv`.
+- Optional dependency group `deep` (PyTorch); CI installs CPU-only PyTorch.
+
 ## [0.1.0] - 2026-10-10
 
 ### Added

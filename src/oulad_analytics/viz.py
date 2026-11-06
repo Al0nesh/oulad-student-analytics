@@ -54,7 +54,7 @@ def plot_metrics(metrics: pd.DataFrame, path: str | Path, split: str = "test") -
     ax.set_ylim(0, 1)
     ax.set_ylabel("Score")
     ax.set_xlabel("")
-    ax.set_title(f"Baseline models on the {split} set")
+    ax.set_title(f"Models on the {split} set")
     ax.grid(axis="y", alpha=0.3)
     ax.legend(frameon=False, ncol=3, loc="upper left")
     ax.tick_params(axis="x", labelsize=8)

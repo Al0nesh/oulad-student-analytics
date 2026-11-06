@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "oulad-student-analytics: early prediction of at-risk students from OULAD"
-version: 0.1.0
-date-released: 2026-10-10
+version: 0.2.0
+date-released: 2026-11-02
 license: MIT
 repository-code: "https://github.com/Al0nesh/oulad-student-analytics"
 authors:
