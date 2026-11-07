@@ -71,6 +71,22 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -e ".[deep]"
 ```
 
+## Run with Docker
+
+No Python installation needed — only [Docker](https://www.docker.com/):
+
+```bash
+docker build -t oulad-analytics .
+docker run --rm oulad-analytics                        # demo on synthetic data
+docker run --rm -p 8000:8000 oulad-analytics serve     # demo + results page at http://localhost:8000
+# real OULAD (Windows paths shown):
+docker run --rm -v C:\data\OULAD:/data:ro -v %cd%\results:/results oulad-analytics train --data-dir /data --out-dir /results
+```
+
+The image is built in stages (`Dockerfile`): pinned dependencies (`requirements/runtime.txt`),
+a **test** stage with CPU PyTorch and the test tools, and a small **runtime** stage that runs
+as a non-root user.
+
 ## Quick start (no download needed)
 
 ```bash
@@ -125,8 +141,15 @@ notebooks/         step-by-step notebooks: first LSTM and the best model
     viz.py         figures
     synthetic.py   fake data in OULAD format (for tests and CI)
     cli.py         command-line interface
-tests/             pytest suite (39 tests, 100 % line coverage)
+tests/             pytest suite (42 tests, 100 % line coverage)
 .github/workflows/ ci.yml (lint, test, demo, build) and release.yml (CD)
+Dockerfile         multi-stage image: deps -> test -> builder -> runtime
+docker/            container entry point (`serve` mode: results as a small web service)
+requirements/      pinned dependency versions for reproducible images
+Jenkinsfile        Jenkins CI/CD pipeline
+jenkins/           ready-to-run Jenkins server (Docker Compose + Configuration as Code)
+k8s/               Kubernetes manifests (namespace, deployment, service) for Minikube
+docs/              jenkins-setup.md — step-by-step guide to run the pipeline locally
 ```
 
 ## Technology choices
@@ -140,7 +163,9 @@ tests/             pytest suite (39 tests, 100 % line coverage)
 | Figures | matplotlib | publication-quality static figures, works on servers without a screen |
 | Tests | pytest + pytest-cov | simple test functions, fixtures, coverage gate (80 %) |
 | Style | ruff | linter and formatter in one fast tool |
-| CI/CD | GitHub Actions | built into GitHub, free for public repositories |
+| CI/CD | GitHub Actions + Jenkins | Actions is built into GitHub; Jenkins runs the same checks on a self-hosted server |
+| Containers | Docker | the same environment on every computer; tests run inside the image that ships |
+| Deployment | Kubernetes (Minikube) | rolling updates, health checks and replicas for the demo service |
 
 ## Testing
 
@@ -162,6 +187,10 @@ sources of data leakage in learning analytics.
   the run page and saved as an artifact) → package build.
 - **CD** (`.github/workflows/release.yml`) — pushing a tag such as `v0.1.0` runs the tests,
   builds the wheel, and publishes a GitHub Release with the package and demo results attached.
+- **Jenkins** (`Jenkinsfile`) — polls GitHub every ~2 minutes and, for every new commit:
+  builds the test image → lint → unit tests (JUnit + coverage reports) → builds the runtime
+  image → smoke test → optional push to Docker Hub → deploys a test server on port 8081 →
+  optional rolling deployment to Minikube. See [docs/jenkins-setup.md](docs/jenkins-setup.md).
 - **Dependabot** checks for new versions of dependencies and actions every month.
 
 ## Data and licence
